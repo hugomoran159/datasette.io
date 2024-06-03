@@ -66,7 +66,7 @@ jobs:
 
     - name: Build and push Docker image
       run: |
-        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/YOUR_IMAGE_NAME .
+        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/datasette .
       env:
         GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
 
