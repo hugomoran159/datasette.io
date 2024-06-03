@@ -7,7 +7,7 @@ on:
       from_scratch:
         description: Enter 'skip' to create a new database from scratch
   schedule:
-    - cron:  '26 4 * * *'
+    - cron: '26 4 * * *'
 
 jobs:
   scheduled:
@@ -15,10 +15,12 @@ jobs:
     steps:
     - name: Check out repo
       uses: actions/checkout@v3
+
     - name: Set up Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.9'
+
     - uses: actions/cache@v3
       name: Configure pip caching
       with:
@@ -26,33 +28,55 @@ jobs:
         key: ${{ runner.os }}-pip-${{ hashFiles('**/requirements.txt') }}
         restore-keys: |
           ${{ runner.os }}-pip-
+
     - name: Install Python dependencies
-      run: |
-        pip install -r requirements.txt
+      run: pip install -r requirements.txt
+
     - name: Run the pytest tests
       run: pytest
+
     - name: Download previous content.db
       if: github.event.inputs.from_scratch != 'skip'
-      run: |
-        curl -O https://datasette.io/content.db
+      run: curl -O https://datasette.io/content.db
+
     - name: Download previous blog.db
       if: github.event.inputs.from_scratch != 'skip'
-      run: |
-        curl --fail -o blog.db https://datasette.io/blog.db
+      run: curl --fail -o blog.db https://datasette.io/blog.db
       continue-on-error: true
+
     - name: Build databases
       run: scripts/build.sh
       env:
         GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
     - name: Fetch documentation database for search index
       run: curl -o docs-index.db https://stable-docs.datasette.io/docs.db
+
     - name: Soundness check
       run: scripts/test.sh
-    - name: Set up Cloud Run
-      uses: google-github-actions/setup-gcloud@v0
+
+    - name: Set up Google Cloud SDK
+      uses: google-github-actions/setup-gcloud@v1
       with:
-        version: '318.0.0'
-        service_account_email: ${{ secrets.GCP_SA_EMAIL }}
+        project_id: ${{ secrets.GCP_PROJECT_ID }}
         service_account_key: ${{ secrets.GCP_SA_KEY }}
+
+    - name: Configure Docker for Google Cloud
+      run: gcloud auth configure-docker
+
+    - name: Build and push Docker image
+      run: |
+        gcloud builds submit --tag gcr.io/${{ secrets.GCP_PROJECT_ID }}/YOUR_IMAGE_NAME .
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+
     - name: Deploy to Cloud Run
-      run: scripts/deploy.sh
+      run: |
+        gcloud run deploy YOUR_SERVICE_NAME \
+          --image gcr.io/${{ secrets.GCP_PROJECT_ID }}/YOUR_IMAGE_NAME \
+          --region YOUR_REGION \
+          --platform managed \
+          --allow-unauthenticated
+      env:
+        GOOGLE_APPLICATION_CREDENTIALS: ${{ secrets.GCP_SA_KEY }}
+
