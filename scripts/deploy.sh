@@ -1,8 +1,8 @@
 #!/bin/bash
 set -euf -o pipefail
 
-gcloud config set run/region us-central1
-gcloud config set project datasette-222320
+gcloud config set run/region europe-west2
+gcloud config set project coral-core-425319-d0
 datasette publish cloudrun \
   content.db docs-index.db dogsheep-index.db blog.db tils.db \
   --branch 1.0a2 \
