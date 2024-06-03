@@ -47,7 +47,7 @@ jobs:
     - name: Build databases
       run: scripts/build.sh
       env:
-        GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        GITHUB_TOKEN: ${{ secrets.GH_TOKEN }}
 
     - name: Fetch documentation database for search index
       run: curl -o docs-index.db https://stable-docs.datasette.io/docs.db
